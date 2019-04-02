@@ -36,6 +36,18 @@ const LaunchType = new GraphQLObjectType({
     })
 });
 
+const LaunchesPaginatedType = new GraphQLObjectType({
+    name: 'LaunchesPaginated',
+    fields: {
+        list: {
+            type: GraphQLList(LaunchType)
+        },
+        total: {
+            type: GraphQLInt
+        }
+    }
+});
+
 const RocketType = new GraphQLObjectType({
     name: 'Rocket',
     fields: () => ({
@@ -49,10 +61,21 @@ const RootQuery = new GraphQLObjectType({
     name: 'RootQueryType',
     fields: { 
         launches: {
-            type: new GraphQLList(LaunchType),
+            type: LaunchesPaginatedType,
+            args: {
+                limit: { type: GraphQLInt },
+                offset: { type: GraphQLInt }
+            },
             resolve(parent, args) {
-                return axios.get(urlLaunches)
-                    .then(res => res.data);
+                return axios.get(`${urlLaunches}?limit=${args.limit}&offset=${args.offset}`)
+                    .then(res => {
+                        console.log('res', res.headers['spacex-api-count']);
+                        const data = {
+                            list: res.data,
+                            total: res.headers['spacex-api-count']
+                        }
+                        return data;
+                    });
             }
         },
         rockets: {
